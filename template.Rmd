@@ -3,4 +3,97 @@ title: "Data Import"
 output: github_document
 ---
 
+```{r}
+library(tidyverse)
+```
+
 ## Data Import: CSVs
+
+Let's import data using the 'readr' package.
+
+```{r}
+litters_data = read_csv("data/FAS_litters.csv")
+litters_data = janitor::clean_names(litters_data)
+names(litters_data)
+```
+## Learning Assessment
+
+```{r}
+pups_data = read_csv(file = "./data/FAS_pups.csv")
+
+```
+
+## Looking at Data
+```{r}
+litters_data
+tail(litters_data, 5)
+skimr::skim(litters_data)
+view(litters_data)
+```
+
+## Arguments to Read
+
+```{r}
+litters_data = read_csv(file = "./data/FAS_litters.csv",
+  skip = 10, col_names = FALSE)
+head(litters_data)
+```
+## Parsing Columns
+
+```{r}
+litters_data = read_csv(file = "./data/FAS_litters.csv",
+  col_types = cols(
+    Group = col_character(),
+    `Litter Number` = col_character(),
+    `GD0 weight` = col_double(),
+    `GD18 weight` = col_double(),
+    `GD of Birth` = col_integer(),
+    `Pups born alive` = col_integer(),
+    `Pups dead @ birth` = col_integer(),
+    `Pups survive` = col_integer()
+  )
+)
+tail(litters_data)
+
+litters_data = read_csv(file = "./data/FAS_litters.csv",
+  col_types = "ccddiiii"
+)
+litters_data
+```
+## Importing other data file types
+
+```{r}
+library(readxl)
+mlb11_data = read_excel("data/mlb11.xlsx", n_max = 20)
+head(mlb11_data, 5)
+
+library(haven)
+pulse_data = read_sas("./data/public_pulse_data.sas7bdat")
+head(pulse_data, 5)
+```
+## Comparison with Base R
+
+```{r}
+
+pups_base = read.csv("./data/FAS_pups.csv")
+pups_readr = read_csv("./data/FAS_pups.csv")
+
+View(pups_base)
+View(pups_readr)
+
+pups_base
+pups_readr
+
+pups_base$S
+pups_readr$S
+
+#Don't Use read.csv in base R
+```
+
+# Data export
+
+```{r}
+#write_csv(lotr_words_df, file = "data/LotR_Words.csv")
+```
+
+
