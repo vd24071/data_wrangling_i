@@ -1,0 +1,57 @@
+---
+title: "Simple document"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r, echo = FALSE, message = FALSE}
+library(tidyverse)
+```
+
+I'm an R Markdown document!
+
+# Section 1
+
+Here's a **code chunk** that samples from a *normal distribution*:
+
+```{r}
+samp = rnorm(100)
+length(samp)
+```
+
+# Section 2
+
+I can take the mean of the sample, too! The mean is `r round(mean(samp), 2)`.
+
+# Section 3
+
+This is going to make a plot! First I generate a dataframe, then use `ggplot` to make a scatterplot.
+
+```{r chunk_scatterplot, echo = FALSE}
+
+plot_df =
+  tibble(
+    x = rnorm(n = 1000),
+    y = 1 + 2 * x + rnorm(n = 1000)
+  )
+
+ggplot(plot_df, aes(x = x, y = y)) + geom_point()
+
+```
+
+## Plot for Learning Assessment
+
+This is a quick kind of solution to the LA
+
+```{r}
+la_df =
+  tibble(
+    norm = rnorm(n=500, mean = 1),
+    logical = norm > 0,
+    abs_norm = abs(norm)
+  )
+
+# ggplot(la_df, aes(x = , y = y)) + geom_histogram()
+```
