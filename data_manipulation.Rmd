@@ -1,0 +1,247 @@
+---
+title: "Data Manipulation with 'dplyr'"
+output: github_document
+---
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+```
+
+### Clean Up Column Names 
+
+By Using Janitor in Litters and Pups Data
+
+```{r}
+library(tidyverse)
+
+options(tibble.print_min = 3)
+
+litters_data = read_csv("./data/FAS_litters.csv",
+  col_types = "ccddiiii")
+litters_data = janitor::clean_names(litters_data)
+
+pups_data = read_csv("./data/FAS_pups.csv",
+  col_types = "ciiiii")
+pups_data = janitor::clean_names(pups_data)
+
+```
+# Select
+
+Select certain columns
+
+```{r}
+select(litters_data, group, litter_number, gd0_weight, pups_born_alive)
+
+select(litters_data, group:gd_of_birth)
+```
+## Remove
+
+Remove columns using select
+
+```{r}
+select(litters_data, -pups_survive)
+
+select(litters_data, -pups_survive, -group)
+```
+## Rename Using Select
+
+New name is on left, old is on right
+```{r}
+select(litters_data, GROUP = group, LiTtEr_NuMbEr = litter_number)
+```
+## Rename Using Rename 
+
+Rename variables using rename function instead of select
+
+```{r}
+rename(litters_data, GROUP = group, LiTtEr_NuMbEr = litter_number)
+```
+## Other functions
+
+starts_with(), ends_with(), contains(), everything()
+
+everything() puts every other variable after the ones you state
+```{r}
+select(litters_data, starts_with("gd"))
+
+select(litters_data, litter_number, pups_survive, everything())
+```
+# Relocate 
+
+Does a similar thing to select(everything())
+
+```{r}
+relocate(litters_data, litter_number, pups_survive)
+```
+# Learning Assesment #1
+
+```{r}
+select(pups_data, litter_number, sex, pd_ears)
+```
+###Filter
+
+You will often filter using comparison operators (>, >=, <, <=, ==, and !=). You may also use %in% to detect if values appear in a set, and is.na() to find missing values. The results of comparisons are logical – the statement is TRUE or FALSE depending on the values you compare – and can be combined with other comparisons using the logical operators & (and) and | (or), or negated using !.
+
+Some ways you might filter the litters data are:
+
+gd_of_birth == 20
+pups_born_alive >= 2
+pups_survive != 4
+!(pups_survive == 4)
+group %in% c("Con7", "Con8")
+group == "Con7" & gd_of_birth == 20
+
+A very common filtering step requires you to omit missing observations. You can do this with filter, but I recommend using drop_na from the tidyr package:
+
+drop_na(litters_data) will remove any row with a missing value
+drop_na(litters_data, wt_increase) will remove rows for which wt_increase is missing.
+
+# Learning Assessment
+
+```{r}
+filter(pups_data, sex == 1)
+
+filter(pups_data, pd_walk < 11, sex == 2)
+```
+### Mutate
+
+To change columns or create new ones
+
+```{r}
+mutate(litters_data,
+  wt_gain = gd18_weight - gd0_weight,
+  group = str_to_lower(group)
+)
+```
+# Learning Assessment
+
+```{r}
+mutate(pups_data,
+       sub_pd_pivot = pd_pivot - 7,
+       sum_pd = pd_ears + pd_eyes + pd_pivot + pd_walk
+)
+```
+### Arrange
+
+Arrange the rows in your data according to the values in one or more columns
+
+In SAS, similar to proc sort
+
+```{r}
+head(arrange(litters_data, group, pups_born_alive), 10)
+```
+### %>%
+
+We’ve seen several commands you will use regularly for data manipulation and cleaning. You will rarely use them in isolation. For example, suppose you want to load the data, clean the column names, remove pups_survive, and create wt_gain. There are a couple of options for this kind of multi-step data manipulation:
+
+define intermediate datasets (or overwrite data at each stage)
+nest function calls
+The following is an example of the first option:
+
+```{r}
+litters_data_raw = read_csv("./data/FAS_litters.csv",
+  col_types = "ccddiiii")
+litters_data_clean_names = janitor::clean_names(litters_data_raw)
+litters_data_selected_cols = select(litters_data_clean_names, -pups_survive)
+litters_data_with_vars = 
+  mutate(
+    litters_data_selected_cols, 
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group))
+litters_data_with_vars_without_missing = 
+  drop_na(litters_data_with_vars, wt_gain)
+litters_data_with_vars_without_missing
+
+```
+Below, we try the second option:
+
+```{r}
+litters_data_clean = 
+  drop_na(
+    mutate(
+      select(
+        janitor::clean_names(
+          read_csv("./data/FAS_litters.csv", col_types = "ccddiiii")
+          ), 
+      -pups_survive
+      ),
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group)
+    ),
+  wt_gain
+  )
+
+litters_data_clean
+```
+These are both confusing and bad: the first gets confusing and clutters our workspace, and the second has to be read inside out.
+
+Piping solves this problem. It allows you to turn the nested approach into a sequential chain by passing the result of one function call as an argument to the next function call:
+
+```{r}
+litters_data = 
+  read_csv("./data/FAS_litters.csv", col_types = "ccddiiii") %>%
+  janitor::clean_names() %>%
+  select(-pups_survive) %>%
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group)) %>% 
+  drop_na(wt_gain)
+
+litters_data
+```
+The easiest way to read %>% is “then”; the keyboard shortcuts are Ctrl + Shift + M (Windows)
+
+You don't need to name the dataset you're using for each pipe step, but you can put a placeholder, if you want.
+
+```{r}
+litters_data = 
+  read_csv("./data/FAS_litters.csv", col_types = "ccddiiii") %>%
+  janitor::clean_names(dat = .) %>%
+  select(.data = ., -pups_survive) %>%
+  mutate(.data = .,
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group)) %>% 
+  drop_na(data = ., wt_gain)
+```
+
+In this example, the dataset argument is called dat in janitor::clean_names, .data in the dplyr functions, and data in drop_na – which is definitely confusing. In the majority of cases (and everywhere in the tidyverse) you’ll elide the first argument and be happy with life, but there are some cases where the placeholder is necessary. For example, to regress wt_gain on pups_born_alive, you might use:
+
+```{r}
+litters_data %>%
+  lm(wt_gain ~ pups_born_alive, data = .) %>%
+  broom::tidy()
+```
+
+lm makes a linear model, in base R, so it doesn't know what dataset you are using. You need to specify your dataset at the end. Use "." as a placeholder.
+
+Can use non-tidyverse functions using pipe as long as you put placeholder dataset.
+
+There are limitations to the pipe. You shouldn’t have sequences that are too long; there isn’t a great way to deal with multiple inputs and outputs; and (since it’s not base R) not everyone will know what %>% means or does. That said, compared to days when R users only had the first two options, life is much better!
+
+# Learning Assessment
+
+Write a chain of commands that:
+
+loads the pups data
+cleans the variable names
+filters the data to include only pups with sex 1
+removes the PD ears variable
+creates a variable that indicates whether PD pivot is 7 or more days
+
+```{r}
+pups_data %>% 
+  read_csv("./data/FAS_pups.csv", col_types = "ccddiiii") %>% 
+  janitor::clean_names() %>% 
+  filter(sex = 1) %>% 
+  select(-pd_ears) %>% 
+  over_7_pd_pivot = pd_pivot >= 7
+
+```
+
+
+
